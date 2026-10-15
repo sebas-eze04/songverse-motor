@@ -2,7 +2,7 @@
 
 Motor local de la página **[SongVerse](https://sebas-eze04.github.io/songverse/)**.
 
-La página tiene toda la interfaz (tus playlists de Spotify en CSV, una búsqueda o un enlace de YouTube); este programa hace la descarga **en tu propio equipo**: canciones en MP3 de 320 kbps con su portada, su letra sincronizada y sus datos (listas para «Importar» en [Frame](https://sebas-eze04.github.io/frame-app/)) y vídeos en la calidad que elijas.
+La página tiene toda la interfaz (tus playlists de Spotify en CSV, una búsqueda o un enlace de YouTube); este programa hace la descarga **en tu propio equipo**: canciones en MP3 (320, 256, 192 o 128 kbps) con la portada original dentro del archivo, su letra sincronizada en `.lrc` y sus datos completos, y vídeos MP4 (H.264) en la calidad que elijas, con su miniatura como portada. Admite colas de varios enlaces, muestra velocidad, peso y tiempo restante, y permite pausar, reanudar y cancelar cada descarga; cuando hay más de un archivo, todo va a `Descargas\SongVerse descarga`.
 
 ## Instalar
 
