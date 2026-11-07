@@ -1,19 +1,18 @@
 # SongVerse
 
-Motor local de la página **[SongVerse](https://sebas-eze04.github.io/songverse/)**.
-
-La página tiene toda la interfaz (tus playlists de Spotify en CSV, una búsqueda o un enlace de YouTube); este programa hace la descarga **en tu propio equipo**: canciones en MP3 (320, 256, 192 o 128 kbps) con la portada original dentro del archivo, su letra sincronizada en `.lrc` y sus datos completos, y vídeos MP4 (H.264) en la calidad que elijas, con su miniatura como portada. Admite colas de varios enlaces, muestra velocidad, peso y tiempo restante, y permite pausar, reanudar y cancelar cada descarga; cuando hay más de un archivo, todo va a `Descargas\SongVerse descarga`.
+Motor local de descargas para Windows. Vive junto al reloj, sin ventana, y hace la descarga **en tu propio equipo** para las apps de escritorio compatibles que lo integran: canciones en MP3 (hasta 320 kbps) con su portada dentro del archivo, su letra (sincronizada también en `.lrc`, si la hay) y sus datos completos, y vídeos MP4 (H.264) en la calidad que se pida, con su miniatura como portada. Admite colas largas, informa del avance, la velocidad, el peso y el tiempo restante, y permite pausar, reanudar y cancelar cada descarga.
 
 ## Instalar
 
-Descarga `SongVerse-Setup.exe` de la [última versión](https://github.com/sebas-eze04/songverse-motor/releases/latest) (Windows 10 y 11, 64 bits). Queda junto al reloj de Windows; la página lo detecta sola.
+Descarga `SongVerse-Setup.exe` de la [última versión](https://github.com/sebas-eze04/songverse-motor/releases/latest) (Windows 10 y 11, 64 bits). Arranca con Windows en silencio; su menú junto al reloj abre la carpeta de música o lo cierra.
 
 ## Seguridad
 
 - Escucha **solo en 127.0.0.1** (tu equipo), puerto 47321.
-- Solo atiende a la página oficial: cualquier otra web recibe un rechazo.
+- Solo atiende a las apps de escritorio de tu propio equipo: cualquier página web recibe un rechazo.
+- Solo entrega los archivos que él mismo descargó.
 - Para letras y portadas solo consulta una lista cerrada de servicios.
-- Cada versión va firmada: el motor solo instala actualizaciones con la firma del proyecto.
+- Cada versión va firmada: el motor solo instala actualizaciones con la firma del proyecto, y se pone al día solo cuando no está descargando nada.
 
 ## Uso responsable
 
