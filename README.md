@@ -2,6 +2,8 @@
 
 Motor local de descargas para Windows. Vive junto al reloj, sin ventana, y hace la descarga **en tu propio equipo** para las apps de escritorio compatibles que lo integran: canciones en MP3 (hasta 320 kbps) con su portada dentro del archivo, su letra (sincronizada también en `.lrc`, si la hay) y sus datos completos, y vídeos MP4 (H.264) en la calidad que se pida, con su miniatura como portada. Admite colas largas, informa del avance, la velocidad, el peso y el tiempo restante, y permite pausar, reanudar y cancelar cada descarga.
 
+Se mantiene solo: revisa yt-dlp cada 6 horas y lo pone al día, rehace una copia que se rompió, reintenta tras un corte de red y se actualiza a sí mismo cuando hay una versión nueva.
+
 ## Instalar
 
 Descarga `SongVerse-Setup.exe` de la [última versión](https://github.com/sebas-eze04/songverse-motor/releases/latest) (Windows 10 y 11, 64 bits). Arranca con Windows en silencio; su menú junto al reloj abre la carpeta de música o lo cierra.
