@@ -8,14 +8,14 @@ Se mantiene solo: revisa yt-dlp cada 6 horas y lo pone al día, rehace una copia
 
 **Windows** (10 y 11, 64 bits): descarga `SongVerse-Setup.exe` de la [última versión](https://github.com/sebas-eze04/songverse-motor/releases/latest). Arranca con Windows en silencio; su menú junto al reloj abre la carpeta de música o lo cierra.
 
-**Android** (8 o posterior, 64 bits): descarga `SongVerse-Android.apk` de la [versión para Android](https://github.com/sebas-eze04/songverse-motor/releases/tag/android-v1.2.2). Al abrirlo solo dice que está activo: trabaja para la app que lo integra, en el mismo dispositivo, y se apaga solo cuando lleva un rato sin nada que hacer. La app compatible lo despierta cuando lo necesita.
+**Android** (8 o posterior, 64 bits): descarga `SongVerse-Android.apk` de la [versión para Android](https://github.com/sebas-eze04/songverse-motor/releases/tag/android-v1.2.3). Al abrirlo solo dice que está activo: trabaja para la app que lo integra, en el mismo dispositivo, y se apaga solo cuando lleva un rato sin nada que hacer. La app compatible lo despierta cuando lo necesita.
 
 ## Seguridad
 
 - Escucha **solo en 127.0.0.1** (tu equipo), puerto 47321.
 - Solo atiende a las apps compatibles de tu propio equipo: cualquier página web recibe un rechazo.
 - Solo entrega los archivos que él mismo descargó.
-- En Android (desde la 1.2.2), la app que lo integra le entrega una llave al despertarlo. Con ella la app firma cada petición y el motor firma cada respuesta, así que otra app del dispositivo no puede hacerse pasar por él; y cada app solo ve y maneja sus propias descargas.
+- En Android (desde la 1.2.2), la app que lo integra le entrega una llave al despertarlo. Con ella la app firma cada petición y el motor firma cada respuesta, así que otra app del dispositivo no puede hacerse pasar por él; y cada app solo ve y maneja sus propias descargas. Desde la 1.2.3 la app puede, además, cifrar lo que pide (AES-256-GCM), y cada arranque del motor es una sesión distinta: una petición capturada no sirve después.
 - Para letras y portadas solo consulta una lista cerrada de servicios.
 - Cada versión va firmada. En Windows, el motor solo instala actualizaciones con la firma del proyecto, y se pone al día solo cuando no está descargando nada. En Android, las actualizaciones las instala el sistema, que exige la misma firma.
 

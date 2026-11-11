@@ -9,6 +9,7 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
@@ -23,6 +24,10 @@ import kotlin.concurrent.thread
 // Desde 1.2.2, con llaves (Llaves.kt): la app que entregó una llave firma
 // cada petición y el motor firma cada respuesta, para que la app sepa que quien
 // contesta en el puerto es el motor y no otra app que lo ocupó.
+//
+// Desde 1.2.3 la app puede cifrar el cuerpo de lo que pide, y cada arranque
+// del motor tiene su sesión: el motor la dice en «/status» (firmado) y la app
+// la pone en cada petición. Lo firmado para una sesión no vale en otra.
 // ============================================================
 class Servidor {
     private val allowedOrigins = setOf("http://tauri.localhost", "https://tauri.localhost")
@@ -104,10 +109,13 @@ class Servidor {
         return Request(parts[0].uppercase(), parts[1].substringBefore('?'), headers, if (read == length) body else body.copyOf(read))
     }
 
-    /** Una petición firmada: con qué llave llegó y lo que hace falta para firmar su respuesta. */
-    private class Canal(val id: String, val key: ByteArray, val nonce: String, val path: String)
+    /** Una petición firmada: con qué llave llegó, lo que hace falta para firmar su respuesta y su cuerpo ya abierto. */
+    private class Canal(val id: String, val key: ByteArray, val nonce: String, val path: String, val body: ByteArray)
 
-    /** La petición trae llave, pero no vale: `llave` (el motor no la conoce) o `firma`. */
+    /** Esta vida del motor. Cambia en cada arranque: lo firmado para otra ya no vale. */
+    private val session = ByteArray(16).also { SecureRandom().nextBytes(it) }.let { Llaves.hex(it) }
+
+    /** La petición trae llave, pero no vale: `llave` (el motor no la conoce), `firma` o `sesion` (es de otro arranque). */
     private class Rechazo(val why: String) : Exception(why)
 
     private val keyId = Regex("^[0-9a-f]{16}$")
@@ -134,10 +142,16 @@ class Servidor {
         val time = request.headers["x-motor-time"].orEmpty()
         val at = time.toLongOrNull()
         if (!nonceShape.matches(nonce) || at == null || kotlin.math.abs(System.currentTimeMillis() - at) > MAX_SKEW_MS) throw Rechazo("firma")
-        val expected = Llaves.hmac(key, "req\n$nonce\n$time\n${request.path}\n${Llaves.hex(Llaves.sha256(request.body))}")
-        if (!Llaves.same(expected, request.headers["x-motor-auth"].orEmpty().lowercase())) throw Rechazo("firma")
+        // Con sesión (1.2.3), va dentro de lo firmado; sin ella, la firma de la 1.2.2.
+        val claimed = request.headers["x-motor-session"]
+        val bodyHash = Llaves.hex(Llaves.sha256(request.body))
+        val signedText = if (claimed == null) "req\n$nonce\n$time\n${request.path}\n$bodyHash" else "req\n$nonce\n$time\n$claimed\n${request.path}\n$bodyHash"
+        if (!Llaves.same(Llaves.hmac(key, signedText), request.headers["x-motor-auth"].orEmpty().lowercase())) throw Rechazo("firma")
         if (!firstTime(nonce)) throw Rechazo("firma")
-        return Canal(id, key, nonce, request.path)
+        // «/status» es el saludo: ahí la app aún no sabe la sesión, y la aprende de la respuesta.
+        if (claimed != null && request.path != "/status" && claimed != session) throw Rechazo("sesion")
+        val plain = if (request.headers["x-motor-enc"] == "1") Llaves.open(key, request.body, "$nonce\n${request.path}") ?: throw Rechazo("firma") else request.body
+        return Canal(id, key, nonce, request.path, plain)
     }
 
     /** La firma de una respuesta: ata el cuerpo a la petición que la pidió. */
@@ -165,7 +179,7 @@ class Servidor {
             head.append("Access-Control-Allow-Origin: $origin\r\n")
             head.append("Vary: Origin\r\n")
             head.append("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n")
-            head.append("Access-Control-Allow-Headers: Content-Type, X-Motor-Key, X-Motor-Nonce, X-Motor-Time, X-Motor-Auth\r\n")
+            head.append("Access-Control-Allow-Headers: Content-Type, X-Motor-Key, X-Motor-Nonce, X-Motor-Time, X-Motor-Auth, X-Motor-Session, X-Motor-Enc\r\n")
             head.append("Access-Control-Expose-Headers: X-Motor-Proof\r\n")
             head.append("Access-Control-Allow-Private-Network: true\r\n")
             head.append("Access-Control-Max-Age: 600\r\n")
@@ -228,7 +242,7 @@ class Servidor {
         }
         // De quién son los trabajos: de la llave que los pidió ("" = las apps sin llave, juntas).
         val owner = canal?.id.orEmpty()
-        val body = runCatching { JSONObject(request.body.toString(Charsets.UTF_8)) }.getOrElse { JSONObject() }
+        val body = runCatching { JSONObject((canal?.body ?: request.body).toString(Charsets.UTF_8)) }.getOrElse { JSONObject() }
 
         // El archivo terminado va tal cual, no en JSON.
         if (request.path == "/file") {
@@ -242,7 +256,7 @@ class Servidor {
 
         val result: Any = try {
             when (request.path) {
-                "/status" -> Motor.status()
+                "/status" -> Motor.status().put("session", session)
                 "/search" -> Motor.search(body.optString("q"), body.optInt("limit", 10))
                 "/info" -> Motor.info(body.optString("url"))
                 "/fetch" -> Motor.fetch(body)

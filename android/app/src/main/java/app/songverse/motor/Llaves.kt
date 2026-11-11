@@ -2,7 +2,9 @@ package app.songverse.motor
 
 import android.content.Context
 import java.security.MessageDigest
+import javax.crypto.Cipher
 import javax.crypto.Mac
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 // ============================================================
@@ -21,6 +23,11 @@ import javax.crypto.spec.SecretKeySpec
 // Cada llave es, además, un cliente distinto: sus trabajos no los ve ni los
 // toca otro. Las peticiones sin llave (apps anteriores a esto) siguen
 // funcionando, sin firma y con sus trabajos aparte.
+//
+// 1.2.3: la app puede, además, CIFRAR lo que pide (AES-256-GCM con una llave
+// que sale de la compartida). Si otra app ocupa el puerto justo cuando el
+// motor se cae, lo que le llegue no lo puede leer. Y cada arranque del motor
+// es una sesión distinta (Servidor.kt): una petición capturada no sirve después.
 // ============================================================
 object Llaves {
     /** Extra del Intent de arranque con la llave (64 caracteres hexadecimales). */
@@ -49,6 +56,25 @@ object Llaves {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(key, "HmacSHA256"))
         return hex(mac.doFinal(text.toByteArray(Charsets.UTF_8)))
+    }
+
+    /**
+     * Abre el cuerpo cifrado de una petición: 12 bytes de vector y, detrás, AES-256-GCM con su
+     * sello. La llave de cifrado es HMAC(llave, "enc"); `bound` (número de petición y ruta) va
+     * atado al sello. `null` si no lo cifró quien tiene la llave o si lo tocaron por el camino.
+     */
+    fun open(key: ByteArray, data: ByteArray, bound: String): ByteArray? {
+        if (data.size < 12 + 16) return null
+        return try {
+            val mac = Mac.getInstance("HmacSHA256")
+            mac.init(SecretKeySpec(key, "HmacSHA256"))
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(mac.doFinal("enc".toByteArray(Charsets.UTF_8)), "AES"), GCMParameterSpec(128, data, 0, 12))
+            cipher.updateAAD(bound.toByteArray(Charsets.UTF_8))
+            cipher.doFinal(data, 12, data.size - 12)
+        } catch (error: Exception) {
+            null
+        }
     }
 
     /** Compara sin delatar, por el tiempo que tarda, cuánto se parecen. */

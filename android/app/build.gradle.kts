@@ -22,8 +22,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Misma numeración que el motor de Windows: el protocolo es el mismo.
-        versionCode = 1002002
-        versionName = "1.2.2"
+        versionCode = 1002003
+        versionName = "1.2.3"
         ndk {
             // Teléfonos y tabletas de 64 bits (todos los de 2019 en adelante).
             abiFilters += listOf("arm64-v8a")
