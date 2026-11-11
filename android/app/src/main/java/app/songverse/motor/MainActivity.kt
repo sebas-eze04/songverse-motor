@@ -17,7 +17,8 @@ import android.widget.TextView
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MotorService.start(this)
+        // Si quien lo despierta por aquí trae su llave, pasa al servicio.
+        MotorService.start(this, intent?.getStringExtra(Llaves.EXTRA))
         if (intent?.action == ACTION_WAKE) {
             finish()
             overridePendingTransition(0, 0)

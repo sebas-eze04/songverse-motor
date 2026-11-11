@@ -41,7 +41,7 @@ import kotlin.concurrent.write
 
 class MotorError(message: String) : Exception(message)
 
-class Job(val id: Long, val kind: String, val title: String, val dest: String) {
+class Job(val id: Long, val kind: String, val title: String, val dest: String, val owner: String) {
     /** queued · running · paused · done · failed · cancelled */
     @Volatile var status = "queued"
     @Volatile var progress = 0.0
@@ -299,6 +299,9 @@ object Motor {
 
     private fun job(id: Long): Job? = synchronized(jobs) { jobs.find { it.id == id } }
 
+    /** El trabajo, solo si es de quien pregunta (`owner`: su llave; "" = las apps sin llave). */
+    private fun job(id: Long, owner: String): Job? = job(id)?.takeIf { it.owner == owner }
+
     private fun status(id: Long): String = job(id)?.status ?: ""
 
     /**
@@ -382,17 +385,17 @@ object Motor {
     // Trabajos
     // ------------------------------------------------------------
 
-    private fun enqueue(kind: String, title: String, dest: String, request: JSONObject): Long {
+    private fun enqueue(kind: String, title: String, dest: String, request: JSONObject, owner: String): Long {
         val id = nextId.getAndIncrement()
-        synchronized(jobs) { jobs.add(Job(id, kind, title, dest)) }
+        synchronized(jobs) { jobs.add(Job(id, kind, title, dest, owner)) }
         tasks[id] = request
         queue.addLast(id)
         return id
     }
 
     /** Pausa: se mata el yt-dlp; el archivo parcial queda y yt-dlp lo continúa al reanudar. */
-    fun pause(id: Long): JSONObject {
-        val job = job(id)
+    fun pause(id: Long, owner: String): JSONObject {
+        val job = job(id, owner)
         if (job == null || (job.status != "running" && job.status != "queued")) throw MotorError("Ese trabajo no se puede pausar.")
         job.status = "paused"
         job.speed = 0.0
@@ -402,8 +405,8 @@ object Motor {
         return JSONObject().put("ok", true)
     }
 
-    fun resume(id: Long): JSONObject {
-        val job = job(id)
+    fun resume(id: Long, owner: String): JSONObject {
+        val job = job(id, owner)
         if (job == null || job.status != "paused") throw MotorError("Ese trabajo no está en pausa.")
         if (!tasks.containsKey(id)) throw MotorError("Trabajo desconocido.")
         job.status = "queued"
@@ -412,8 +415,10 @@ object Motor {
         return JSONObject().put("ok", true)
     }
 
-    fun cancel(id: Long): JSONObject {
-        job(id)?.let { job ->
+    fun cancel(id: Long, owner: String): JSONObject {
+        // El trabajo de otro cliente ni se toca ni se dice que existe.
+        val mine = job(id, owner) ?: return JSONObject().put("ok", true)
+        mine.let { job ->
             if (job.status != "done") {
                 job.status = "cancelled"
                 job.speed = 0.0
@@ -699,34 +704,34 @@ object Motor {
         }
     }
 
-    fun song(body: JSONObject): JSONObject {
+    fun song(body: JSONObject, owner: String): JSONObject {
         checkedYoutube(body.optString("url"))
         if (body.optString("title").isBlank()) throw MotorError("Falta el título.")
         val title = "${body.optString("artist")} — ${body.optString("title")}"
-        return JSONObject().put("job", enqueue("song", title, "music", body))
+        return JSONObject().put("job", enqueue("song", title, "music", body, owner))
     }
 
-    fun jobs(ids: JSONArray?): JSONArray {
+    fun jobs(ids: JSONArray?, owner: String): JSONArray {
         val wanted = ids?.let { list -> (0 until list.length()).map { list.optLong(it) }.toSet() }
         val out = JSONArray()
-        synchronized(jobs) { jobs.filter { wanted == null || it.id in wanted }.forEach { out.put(it.json()) } }
+        synchronized(jobs) { jobs.filter { it.owner == owner && (wanted == null || it.id in wanted) }.forEach { out.put(it.json()) } }
         return out
     }
 
-    fun clearJobs(): JSONObject {
-        synchronized(jobs) { jobs.removeAll { it.status != "queued" && it.status != "running" && it.status != "paused" } }
+    fun clearJobs(owner: String): JSONObject {
+        synchronized(jobs) { jobs.removeAll { it.owner == owner && it.status != "queued" && it.status != "running" && it.status != "paused" } }
         return JSONObject().put("ok", true)
     }
 
     /** El archivo terminado de un trabajo. Solo los que hizo este motor (por su id): nunca una ruta que mande la app. */
-    fun finishedFile(id: Long): File? = job(id)?.takeIf { it.status == "done" }?.file?.let { File(it) }
+    fun finishedFile(id: Long, owner: String): File? = job(id, owner)?.takeIf { it.status == "done" }?.file?.let { File(it) }
 
     /**
      * La app ya recogió el archivo y lo guardó en su biblioteca: la copia del motor sobra (en un
      * teléfono el espacio cuenta). Solo en Android.
      */
-    fun forget(id: Long): JSONObject {
-        val file = finishedFile(id)
+    fun forget(id: Long, owner: String): JSONObject {
+        val file = finishedFile(id, owner)
         if (file != null) {
             file.delete()
             File(file.parentFile, file.nameWithoutExtension + ".lrc").delete()

@@ -58,6 +58,9 @@ class MotorService : Service() {
         if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION, build(0), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else startForeground(NOTIFICATION, build(0))
         Motor.lastActivity = System.currentTimeMillis()
+        // La llave de la app que lo despierta (Llaves.kt), y las que ya tenía apuntadas.
+        Llaves.load(applicationContext)
+        Llaves.add(applicationContext, intent?.getStringExtra(Llaves.EXTRA))
         Motor.start(applicationContext)
         // Un solo motor a la vez: el puerto hace de cerrojo.
         servidor.start()
@@ -95,8 +98,9 @@ class MotorService : Service() {
         /** Sin trabajo ni peticiones durante este rato, el motor se apaga. */
         private const val IDLE_MS = 15 * 60 * 1000L
 
-        fun start(context: Context) {
+        fun start(context: Context, key: String? = null) {
             val intent = Intent(context, MotorService::class.java)
+            if (key != null) intent.putExtra(Llaves.EXTRA, key)
             if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)
         }
     }
