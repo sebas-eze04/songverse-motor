@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="activo">Activo · listo para descargar</string>
+    <string name="descargando">Descargando · %1$d en cola</string>
+    <string name="pantalla">El motor está activo (versión %1$s).\n\nNo tiene pantalla propia: trabaja para la app que lo integra, en este mismo dispositivo. Puedes cerrar esta ventana.\n\nDescarga solo contenido que tengas derecho a guardar.</string>
+</resources>

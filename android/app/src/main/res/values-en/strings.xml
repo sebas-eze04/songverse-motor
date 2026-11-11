@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="activo">Active · ready to download</string>
+    <string name="descargando">Downloading · %1$d in queue</string>
+    <string name="pantalla">The engine is active (version %1$s).\n\nIt has no screen of its own: it works for the app that integrates it, on this same device. You can close this window.\n\nDownload only content you have the right to keep.</string>
+</resources>
